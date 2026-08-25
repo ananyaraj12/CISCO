@@ -1,0 +1,62 @@
+CASE ID: NET-015
+
+TITLE:
+DHCP Scope Mismatch
+
+SYMPTOM:
+PC0 and PC1 receive DHCP IP addresses and can reach each other, but cannot reach the router/gateway at all.
+
+TOPOLOGY:
+PC0 -> Switch0 -> Router0
+
+PC0 NETWORK:
+IP Address: 192.168.20.2 (Assigned via DHCP)
+Subnet Mask: 255.255.255.0
+Default Gateway: 192.168.10.1
+
+EXPECTED SUBNET:
+192.168.10.0/24 (Matching GigabitEthernet0/0 interface IP 192.168.10.1)
+
+ACTUAL SUBNET:
+192.168.20.0/24
+
+EVIDENCE COMMAND:
+show ip interface brief
+
+EVIDENCE:
+Interface              IP-Address      OK? Method Status                Protocol
+GigabitEthernet0/0     192.168.10.1    YES manual up                    up
+GigabitEthernet0/1     unassigned      YES unset  administratively down down
+Vlan1                  unassigned      YES unset  administratively down down
+
+ROUTER CONFIG EVIDENCE:
+Command: show running-config | section dhcp
+
+ip dhcp pool LANPOOL
+network 192.168.20.0 255.255.255.0
+default-router 192.168.10.1
+
+EXPECTED FAULT:
+DHCP pool network statement (192.168.20.0/24) does not match the router interface subnet (192.168.10.0/24).
+
+OSI LAYER:
+Layer 3
+
+CONCEPT:
+dhcp-scope-mismatch
+
+SEVERITY:
+High
+
+EXPECTED NEXT COMMAND:
+show running-config | section dhcp
+
+EXPECTED FIX:
+Reconfigure the DHCP pool network statement to match the router interface subnet (192.168.10.0/24) or update GigabitEthernet0/0 IP address to 192.168.20.1.
+
+FIX COMMAND:
+configure terminal
+ip dhcp pool LANPOOL
+network 192.168.10.0 255.255.255.0
+default-router 192.168.10.1
+exit

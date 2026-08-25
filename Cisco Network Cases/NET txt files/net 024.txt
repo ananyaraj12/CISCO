@@ -1,0 +1,61 @@
+CASE ID: NET-024
+
+TITLE:
+Static NAT Port Forwarding Failure via DHCP IP Drift
+
+SYMPTOM:
+Laptop0 gets "Request Timeout" when attempting to access the internal web server via public NAT IP (`[http://203.0.113.1:8080](http://203.0.113.1:8080)`) after Server0 changes IP allocation mode to DHCP.
+
+TOPOLOGY:
+Laptop0 -> Router0 -> Switch0 -> Server0
+
+LAPTOP0 NETWORK:
+IP Address: 203.0.113.50
+Subnet Mask: 255.255.255.0
+Default Gateway: 203.0.113.1
+DNS Server: 0.0.0.0
+
+EXPECTED SERVICE:
+Static NAT Port Forwarding (Translating Public Port 8080 to Private IP 192.168.1.50 Port 80)
+
+ACTUAL SERVICE STATE:
+Server0 IP changed dynamically to 192.168.1.2 via DHCP, while Router static NAT rule remains hardcoded to 192.168.1.50.
+
+EVIDENCE COMMAND:
+Laptop0 > Web Browser > URL: [http://203.0.113.1:8080](http://203.0.113.1:8080)
+
+EVIDENCE:
+Request Timeout
+
+SERVER EVIDENCE:
+Command: Router0 > CLI > ping 192.168.1.50
+
+Sending 5, 100-byte ICMP Echos to 192.168.1.50, timeout is 2 seconds:
+.....
+Success rate is 0 percent (0/5)
+
+Command: Router0 > CLI > show ip nat translations
+
+Pro Inside global      Inside local       Outside local      Outside global
+tcp 203.0.113.1:8080   192.168.1.50:80    ---                ---
+
+EXPECTED FAULT:
+Server0 IP address drifted from 192.168.1.50 to 192.168.1.2 due to dynamic DHCP allocation, breaking the static NAT mapping on Router0.
+
+OSI LAYER:
+Layer 3 / Layer 4
+
+CONCEPT:
+nat-ip-mismatch-dhcp-drift
+
+SEVERITY:
+High
+
+EXPECTED NEXT COMMAND:
+Laptop0 > Web Browser > URL: [http://203.0.113.1:8080](http://203.0.113.1:8080)
+
+EXPECTED FIX:
+Set Server0 IP Configuration back to Static mode with IPv4 Address 192.168.1.50, Subnet Mask 255.255.255.0, and Default Gateway 192.168.1.1.
+
+FIX COMMAND:
+Server0 > Desktop > IP Configuration > Radio Button: Static > IPv4 Address: 192.168.1.50

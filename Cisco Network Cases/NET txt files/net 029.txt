@@ -1,0 +1,65 @@
+CASE ID: NET-029
+
+TITLE:
+Destination NAT Port Forwarding Deployment
+
+SYMPTOM:
+None — Active validation required via web traffic reachability over WAN port 8080.
+
+TOPOLOGY:
+Web_Server (Fa0) -> Switch0 (Fa0/2) -> Router0 (Gi0/0 LAN / Gi0/1 WAN) -> External_Laptop (Fa0)
+
+EXTERNAL_LAPTOP NETWORK:
+IP Address: 203.0.113.100
+Subnet Mask: 255.255.255.0
+Default Gateway: 203.0.113.1
+DNS Server: 0.0.0.0
+
+EXPECTED SERVICE:
+The NAT engine maps incoming public web requests targeting the router's outside IP address on port 8080 (203.0.113.1:8080) over to the internal Web Server's private IP on port 80 (192.168.1.50:80).
+
+ACTUAL SERVICE STATE:
+The deployment parameters match the architectural intent completely. The boundaries are correctly identified, and the translation map operates smoothly to bridge outside clients to internal resources.
+
+EVIDENCE COMMAND:
+External_Laptop > Desktop > Web Browser > URL: http://203.0.113.1:8080
+
+EVIDENCE:
+Cisco Packet Tracer Web Server Welcome Page loads up completely onto the screen with a 100% successful response handshake match.
+
+SERVER EVIDENCE:
+Command: Router0 > CLI > show ip nat translations
+
+Pro  Inside global      Inside local       Outside local      Outside global
+tcp  203.0.113.1:8080   192.168.1.50:80    203.0.113.100:1025 203.0.113.100:1025
+tcp  203.0.113.1:8080   192.168.1.50:80    ---                ---
+
+Command: Router0 > CLI > show ip nat statistics
+
+Total active translations: 1 (0 static, 1 dynamic; 1 extended)
+Outside interfaces: GigabitEthernet0/1
+Inside interfaces: GigabitEthernet0/0
+
+EXPECTED FAULT:
+None — Standard deployment configuration validation baseline.
+
+OSI LAYER:
+Layer 3 / Layer 4
+
+CONCEPT:
+Static Destination NAT / Port Forwarding
+
+SEVERITY:
+Low (Verification Baseline)
+
+EXPECTED NEXT COMMAND:
+show ip nat translations
+
+EXPECTED FIX:
+Ensure interface boundaries are matching ('ip nat inside' on Gi0/0 and 'ip nat outside' on Gi0/1) and execute the clean non-extended trailing rule line.
+
+FIX COMMAND:
+Router0> enable
+Router0# configure terminal
+Router0(config)# ip nat inside source static tcp 192.168.1.50 80 203.0.113.1 8080
+Router0(config)# end

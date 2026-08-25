@@ -1,0 +1,63 @@
+CASE ID: NET-021
+
+TITLE:
+Guest Wi-Fi Isolation via Access Control List (Corrected)
+
+SYMPTOM / VERIFICATION:
+Guest Wi-Fi clients (192.168.20.0/24) are blocked from reaching internal private assets (File Server at 192.168.10.50). Pings from Laptop0 to Server0 result in "Destination host unreachable", while pings to the default gateway (192.168.20.1) succeed.
+
+TOPOLOGY:
+Laptop0 (Guest) -> AP0 -> Switch0 (VLAN 20) -> Router0 -> Switch0 (VLAN 10) -> Server0 (Internal)
+
+GUEST NETWORK (VLAN 20):
+IP Subnet: 192.168.20.0/24
+Gateway: 192.168.20.1
+
+INTERNAL NETWORK (VLAN 10):
+IP Subnet: 192.168.10.0/24
+File Server IP: 192.168.10.50
+
+EVIDENCE COMMAND:
+ping 192.168.10.50
+
+EVIDENCE:
+Laptop0 > ping 192.168.10.50
+Pinging 192.168.10.50 with 32 bytes of data:
+Reply from 192.168.20.1: Destination host unreachable.
+Reply from 192.168.20.1: Destination host unreachable.
+
+ROUTER CONFIG EVIDENCE:
+Command: show running-config | section interface
+
+interface GigabitEthernet0/0.20
+ encapsulation dot1Q 20
+ ip address 192.168.20.1 255.255.255.0
+ ip access-group BLOCK_GUEST_TO_INTERNAL in
+
+STATUS / FAULT:
+Resolved. The guest network sub-interface (GigabitEthernet0/0.20) now has an active inbound extended ACL blocking inter-VLAN traffic targeting the internal network (192.168.10.0/24).
+
+OSI LAYER:
+Layer 3
+
+CONCEPT:
+acl-guest-isolation-enforced
+
+SEVERITY:
+Resolved
+
+VERIFICATION COMMAND:
+show access-lists
+
+APPLIED FIX:
+Created an extended IP ACL blocking guest traffic to the internal subnet while permitting all other outbound traffic, applied inbound on the guest sub-interface.
+
+FIX COMMAND:
+configure terminal
+ip access-list extended BLOCK_GUEST_TO_INTERNAL
+ deny ip 192.168.20.0 0.0.0.255 192.168.10.0 0.0.0.255
+ permit ip any any
+ exit
+interface GigabitEthernet0/0.20
+ ip access-group BLOCK_GUEST_TO_INTERNAL in
+ exit

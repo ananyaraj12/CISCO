@@ -1,0 +1,37 @@
+CASE ID: CASE-017
+TITLE:
+Router LAN Interface Administratively Down Blocking DHCP
+SYMPTOM:
+PC0 and PC1 lose connectivity to the router/gateway. DHCP renew fails (PCs fall back to no address / APIPA) and pings to the gateway 192.168.10.1 time out.
+TOPOLOGY:
+PC0, PC1 -> Switch0 -> Router0 (GigabitEthernet0/0)
+LAN NETWORK:
+IP Subnet: 192.168.10.0/24
+Gateway: 192.168.10.1
+EVIDENCE COMMAND:
+show ip interface brief
+EVIDENCE:
+Router#show ip interface brief
+Interface              IP-Address      OK? Method Status                Protocol
+GigabitEthernet0/0     192.168.10.1    YES manual administratively down down
+GigabitEthernet0/1     unassigned      YES unset  administratively down down
+Vlan1                  unassigned      YES unset  administratively down down
+EXPECTED FAULT:
+GigabitEthernet0/0 has been administratively shut down, so the interface (and therefore DHCP service reachable through it) is unavailable to PC0 and PC1.
+OSI LAYER:
+Layer 1/2
+CONCEPT:
+interface-down
+SEVERITY:
+High
+EXPECTED NEXT COMMAND:
+show ip dhcp binding
+EXPECTED FIX:
+Bring the interface back up with 'no shutdown' under GigabitEthernet0/0.
+FIX COMMAND:
+configure terminal
+interface gigabitEthernet0/0
+no shutdown
+exit
+ 
+ 

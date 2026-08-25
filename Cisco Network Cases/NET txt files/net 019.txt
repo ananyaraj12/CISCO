@@ -1,0 +1,58 @@
+CASE ID: NET-019
+
+TITLE:
+Wireless Security Key Mismatch
+
+SYMPTOM:
+Laptop0 is unable to connect to the Access Point (AccessPoint0) wirelessly and loses all local network connectivity.
+
+TOPOLOGY:
+Laptop0 - - (Wireless) - - AccessPoint0 -> Switch0 -> Router0
+
+LAPTOP0 NETWORK:
+IP Address: 0.0.0.0 (Failed Connection / APIPA 169.254.x.x)
+Subnet Mask: 0.0.0.0
+Default Gateway: 0.0.0.0
+
+EXPECTED SECURITY KEY:
+SecretKey123 (WPA2-PSK)
+
+ACTUAL LAPTOP SECURITY KEY:
+WrongKey123
+
+EVIDENCE COMMAND:
+Laptop0 > Config Tab > Wireless0 Interface Settings
+
+EVIDENCE:
+SSID: Staff_WiFi
+Authentication: WPA2-PSK
+PSK Passphrase: WrongKey123
+Link Status: Not Connected
+
+ACCESS POINT EVIDENCE:
+Command: AccessPoint0 > Config Tab > Port 1 (Wireless)
+
+SSID: Staff_WiFi
+Authentication: WPA2-PSK
+PSK Passphrase: SecretKey123
+
+EXPECTED FAULT:
+The WPA2-PSK passphrase entered on Laptop0 (WrongKey123) does not match the security key configured on AccessPoint0 (SecretKey123), preventing association and authentication.
+
+OSI LAYER:
+Layer 2
+
+CONCEPT:
+wireless-security-mismatch
+
+SEVERITY:
+High
+
+EXPECTED NEXT COMMAND:
+Laptop0 > Config > Wireless0 > Passphrase Field Check
+
+EXPECTED FIX:
+Update the WPA2-PSK passphrase on Laptop0 to match AccessPoint0's key (SecretKey123).
+
+FIX COMMAND:
+Laptop0 > Config > Wireless0 > PSK Passphrase: SecretKey123

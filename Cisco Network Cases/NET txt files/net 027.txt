@@ -1,0 +1,63 @@
+CASE ID: NET-027
+
+TITLE:
+Incompatible Wireless Frequency Band for Legacy IoT Devices
+
+SYMPTOM:
+Legacy workstations, office printers, and smart IoT devices are unable to locate or connect to the primary wireless network 'Office-5G'. The SSID does not appear in the available Wi-Fi network scans on these devices, while modern dual-band smartphones and laptops connect normally.
+
+TOPOLOGY:
+Laptop-Modern (5GHz) & Legacy_Printer (2.4GHz) -> WRT300N_Wireless_Router -> Switch0 -> Internal_Network
+
+PC0 NETWORK:
+Device Name: Legacy_Printer
+IP Address: 0.0.0.0 (DHCP Unassigned)
+Wireless Module: 802.11b/g/n (2.4 GHz Only)
+Associated SSID: None (Network Invisible)
+
+EXPECTED SERVICE:
+Wireless access point broadcasts dual-band SSIDs (2.4 GHz and 5 GHz) or a legacy-compatible 2.4 GHz SSID to allow connection for all corporate wireless endpoints regardless of radio hardware capabilities.
+
+ACTUAL SERVICE STATE:
+The Wireless Router radio is configured strictly for 5 GHz broadcasting. Legacy endpoints equipped only with 2.4 GHz radios physically cannot detect or connect to the network.
+
+EVIDENCE COMMAND:
+Legacy_Printer > PC Wireless > Wireless Networks (Site Survey)
+
+EVIDENCE:
+No wireless networks found in range. (Office-5G invisible)
+
+SERVER EVIDENCE:
+Command: Wireless_Router > GUI > Wireless > Basic Wireless Settings
+
+Wireless Network Name (SSID): Office-5G
+Wireless Band: 5 GHz Only
+Radio Band: Wide - 40MHz Channel
+Standard Channel: 36 - 5.180GHz
+SSID Broadcast: Enabled
+
+EXPECTED FAULT:
+Frequency band mismatch between the 5 GHz-only wireless access point configuration and the 2.4 GHz-only receiver radio in legacy devices.
+
+OSI LAYER:
+Layer 1 (Physical / Radio Frequency)
+
+CONCEPT:
+wireless-frequency-band-mismatch-2.4ghz-5ghz
+
+SEVERITY:
+Medium
+
+EXPECTED NEXT COMMAND:
+Inspect Wireless Router GUI > Basic Wireless Settings
+
+EXPECTED FIX:
+1. Access Wireless Router setup GUI.
+2. Change Wireless Radio mode to Dual-Band or enable 2.4 GHz band.
+3. Configure an accessible 2.4 GHz SSID (e.g., 'Office-2.4G' or unified 'Office-Wi-Fi').
+4. Connect Legacy_Printer to the 2.4 GHz wireless network.
+
+FIX COMMAND:
+Wireless_Router(GUI)# Set Wireless Band to 2.4GHz / Auto
+Wireless_Router(GUI)# Set SSID to Office-2.4G
+Legacy_Printer(PC Wireless)# Connect to SSID: Office-2.4G

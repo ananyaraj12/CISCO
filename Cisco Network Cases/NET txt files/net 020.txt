@@ -1,0 +1,62 @@
+CASE ID: NET-020
+
+TITLE:
+Missing Access Control List for Guest Wi-Fi Isolation
+
+SYMPTOM:
+Guest Wi-Fi clients are able to ping, reach, and access internal private assets (e.g., File Server at 192.168.10.50), violating the network security policy requiring strict guest isolation.
+
+TOPOLOGY:
+Laptop0 (Guest) -> AP0 -> Switch0 (VLAN 20) -> Router0 -> Switch0 (VLAN 10) -> Server0 (Internal)
+
+GUEST NETWORK (VLAN 20):
+IP Subnet: 192.168.20.0/24
+Gateway: 192.168.20.1
+
+INTERNAL NETWORK (VLAN 10):
+IP Subnet: 192.168.10.0/24
+File Server IP: 192.168.10.50
+
+EVIDENCE COMMAND:
+ping 192.168.10.50
+
+EVIDENCE:
+Laptop0 > ping 192.168.10.50
+Pinging 192.168.10.50 with 32 bytes of data:
+Reply from 192.168.10.50: bytes=32 time=1ms TTL=127
+Reply from 192.168.10.50: bytes=32 time=1ms TTL=127
+
+ROUTER CONFIG EVIDENCE:
+Command: show running-config | section interface
+
+interface GigabitEthernet0/0.20
+encapsulation dot1Q 20
+ip address 192.168.20.1 255.255.255.0
+
+EXPECTED FAULT:
+The sub-interface for the Guest network (GigabitEthernet0/0.20) lacks an inbound Access Control List (ACL) to block traffic destined for the private internal network (192.168.10.0/24).
+
+OSI LAYER:
+Layer 3
+
+CONCEPT:
+acl-guest-isolation-missing
+
+SEVERITY:
+High
+
+EXPECTED NEXT COMMAND:
+show running-config | section ip access-list
+
+EXPECTED FIX:
+Create an extended IP ACL blocking guest traffic to internal subnets while permitting all other outbound traffic, and apply it inbound on the guest sub-interface.
+
+FIX COMMAND:
+configure terminal
+ip access-list extended BLOCK_GUEST_TO_INTERNAL
+deny ip 192.168.20.0 0.0.0.255 192.168.10.0 0.0.0.255
+permit ip any any
+exit
+interface GigabitEthernet0/0.20
+ip access-group BLOCK_GUEST_TO_INTERNAL in
+exit

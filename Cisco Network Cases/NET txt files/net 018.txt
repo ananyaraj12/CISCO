@@ -1,0 +1,59 @@
+CASE ID: NET-018
+
+TITLE:
+DNS Service Disabled
+
+SYMPTOM:
+PC0 can ping the DNS server IP (192.168.20.50) directly, but domain name resolution for example.com fails.
+
+TOPOLOGY:
+PC0 -> Switch0 -> Router0 -> Server0
+
+PC0 NETWORK:
+IP Address: 192.168.10.10
+Subnet Mask: 255.255.255.0
+Default Gateway: 192.168.10.1
+DNS Server: 192.168.20.50
+
+EXPECTED SERVICE:
+DNS Service ON (Listening on UDP/TCP Port 53)
+
+ACTUAL SERVICE STATE:
+DNS Service OFF
+
+EVIDENCE COMMAND:
+nslookup example.com 192.168.20.50
+
+EVIDENCE:
+DNS request timed out.
+timeout was 2 seconds.
+Server: Unknown
+Address: 192.168.20.50
+*** Request to Unknown timed-out.
+
+SERVER EVIDENCE:
+Command: Server0 > Services > DNS Tab
+
+DNS Service: Off
+Resource Record: example.com -> 192.168.20.50 (A Record)
+
+EXPECTED FAULT:
+The DNS Service is turned OFF in Server0 configuration settings despite having valid IP configurations and resource records.
+
+OSI LAYER:
+Layer 7
+
+CONCEPT:
+dns-service-disabled
+
+SEVERITY:
+Medium
+
+EXPECTED NEXT COMMAND:
+nslookup example.com 192.168.20.50
+
+EXPECTED FIX:
+Navigate to Server0 > Services > DNS and toggle the DNS Service switch to "On".
+
+FIX COMMAND:
+Server0 > Services > DNS > Radio Button: ON

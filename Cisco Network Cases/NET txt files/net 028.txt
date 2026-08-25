@@ -1,0 +1,66 @@
+CASE ID: NET-028
+
+TITLE:
+Multi-Host Distributed DHCP IP Address Scope Exhaustion (Distributed Starvation Attack)
+
+SYMPTOM:
+Newly connected corporate endpoints receive APIPA addresses (169.254.X.X) and fail to obtain network access because the DHCP IP pool is completely exhausted across multiple rogue or excessive endpoints.
+
+TOPOLOGY:
+Corp_DHCP (10.1.10.10) [Fa0/1] -> Switch0 [Fa0/2] -> Attacker_PC1
+                                  [Fa0/3] -> Attacker_PC2
+                                  [Fa0/4] -> Attacker_PC3
+                                  [Fa0/5] -> Legitimate_PC (Client)
+
+PC0 NETWORK:
+Device Name: Legitimate_PC
+IP Address: 169.254.18.99 (APIPA / Lease Denied)
+Subnet Mask: 255.255.0.0
+Default Gateway: 0.0.0.0
+DNS Server: 0.0.0.0
+
+EXPECTED SERVICE:
+Legitimate_PC requests an IP address via DHCP broadcast and is assigned a valid address from the corporate pool (e.g., 10.1.10.103).
+
+ACTUAL SERVICE STATE:
+Three separate end-user machines (Attacker_PC1, Attacker_PC2, Attacker_PC3) have acquired all available pool leases (10.1.10.100, 10.1.10.101, 10.1.10.102), leaving zero available leases for Legitimate_PC.
+
+EVIDENCE COMMAND:
+Corp_DHCP > Services > DHCP > Address Pool Status / Active Leases
+
+EVIDENCE:
+Pool Range: 10.1.10.100 - 10.1.10.102 (Max Users: 3)
+Active Leases:
+ - 10.1.10.100 leased to MAC 0001.43AA.1111 (Attacker_PC1)
+ - 10.1.10.101 leased to MAC 0002.43BB.2222 (Attacker_PC2)
+ - 10.1.10.102 leased to MAC 0003.43CC.3333 (Attacker_PC3)
+
+Legitimate_PC Command Prompt > ipconfig /renew
+Output: "DHCP request failed. APIPA address assigned."
+
+EXPECTED FAULT:
+DHCP pool scope limits configured too small for network host volume, combined with unmanaged multi-device access consuming all available IP leases.
+
+OSI LAYER:
+Layer 7 (DHCP Service Scope / IP Address Management)
+
+CONCEPT:
+dhcp-scope-exhaustion-multi-host
+
+SEVERITY:
+High
+
+EXPECTED NEXT COMMAND:
+Corp_DHCP > Services > DHCP > Edit Pool Settings
+
+EXPECTED FIX:
+1. Access Corp_DHCP GUI -> Services -> DHCP.
+2. Change "Maximum number of Users" from 3 to 200.
+3. Save settings.
+4. Execute IP renewal on Legitimate_PC.
+
+FIX COMMAND:
+Corp_DHCP(Services)# Set Start IP Address: 10.1.10.100
+Corp_DHCP(Services)# Set Maximum number of Users: 200
+Legitimate_PC(Command Prompt)# ipconfig /release
+Legitimate_PC(Command Prompt)# ipconfig /renew

@@ -1,0 +1,66 @@
+CASE ID: NET-025
+
+TITLE:
+Outbound Upstream DNS Port 53 Blocked by Firewall ACL
+
+SYMPTOM:
+Internal workstations (Laptop0) experience complete loss of internet browsing, returning timeout errors when trying to reach external websites (e.g., google.com), even though local network pings succeed.
+
+TOPOLOGY:
+Laptop0 -> Switch0 -> Local_DNS_Server (192.168.1.10) -> Router0/Firewall -> Internet (8.8.8.8)
+
+PC0 NETWORK:
+IP Address: 192.168.1.50
+Subnet Mask: 255.255.255.0
+Default Gateway: 192.168.1.1
+DNS Server: 192.168.1.10
+
+EXPECTED SERVICE:
+Recursive DNS resolution where Local DNS Server (192.168.1.10) forwards unresolved queries to external DNS (8.8.8.8) via UDP Port 53.
+
+ACTUAL SERVICE STATE:
+Cannot forward queries to public DNS servers due to restrictive outbound Access Control List (ACL) rules on Router0.
+
+EVIDENCE COMMAND:
+Laptop0 > Command Prompt > nslookup google.com 192.168.1.10
+
+EVIDENCE:
+DNS request timed out.
+timeout was 2 seconds.
+Server: Unknown
+Address: 192.168.1.10
+*** Request to Unknown timed-out.
+
+SERVER EVIDENCE:
+Command: Router0 > CLI > show access-lists
+
+Extended IP access list 100
+    10 deny udp host 192.168.1.10 any eq 53
+    20 permit ip any any
+
+Command: Local_DNS_Server > Command Prompt > nslookup google.com 8.8.8.8
+
+DNS request timed out.
+timeout was 2 seconds.
+
+EXPECTED FAULT:
+An Access Control List (ACL) rule on Router0 explicitly blocks UDP Port 53 traffic from the Local DNS Server to external destinations.
+
+OSI LAYER:
+Layer 4 / Layer 7
+
+CONCEPT:
+firewall-acl-dns-port-block
+
+SEVERITY:
+High
+
+EXPECTED NEXT COMMAND:
+show access-lists
+
+EXPECTED FIX:
+Modify Router0 ACL 100 to permit UDP and TCP Port 53 traffic from Local DNS Server (192.168.1.10) to any external destination.
+
+FIX COMMAND:
+Router0(config)# access-list 100 permit udp host 192.168.1.10 any eq 53
+Router0(config)# access-list 100 permit tcp host 192.168.1.10 any eq 53

@@ -1,0 +1,19 @@
+Case ID: NET-022
+
+Title: Sticky Client Roaming Failure Due to High Coverage Range
+
+Symptom: Laptop0 retains connection to distant AccessPoint0 (-82 dBm, 1 bar) with severe latency instead of roaming to overhead AccessPoint1 (-42 dBm).
+
+Topology: Laptop0 (Client) -> AccessPoint0 (Office-A) / AccessPoint1 (Conf-Room-B) -> Switch0 (2960-24TT)
+
+Expected Fault: AccessPoint0 coverage range is set to maximum (140m), causing RF cell bleed into AccessPoint1 coverage area, trapping client association.
+
+OSI Layer: Layer 1 / Layer 2
+
+Concept: wireless-sticky-client-power-imbalance
+
+Severity: Medium
+
+Expected Next Command: check link metrics in PC Wireless / netsh wlan show interfaces
+
+Expected Fix: Lower AccessPoint0 coverage range to 30m-50m on Port 1 to shrink RF footprint and allow client re-association.

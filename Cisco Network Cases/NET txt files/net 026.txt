@@ -1,0 +1,80 @@
+CASE ID: NET-026
+
+TITLE:
+Rogue DHCP Server Disruption on VLAN 10
+
+SYMPTOM:
+Sales department users on VLAN 10 report complete loss of network connectivity, inability to reach internal file servers, and failure to print documents. Affected workstations obtain unexpected IP addresses in the 192.168.0.0/24 subnet with default gateway 192.168.0.1 instead of the corporate 10.1.10.0/24 subnet.
+
+TOPOLOGY:
+Laptop0 -> Switch0 (Access Port Fa0/2) -> Rogue_Router (LAN Port Fa0/1) -> Switch0 (Trunk Gi0/1) -> Corporate_DHCP_Server (10.1.10.10)
+
+PC0 NETWORK:
+IP Address: 192.168.0.5 (Rogue Lease)
+Subnet Mask: 255.255.255.0
+Default Gateway: 192.168.0.1
+DNS Server: 192.168.0.1
+
+EXPECTED SERVICE:
+Official DHCP Server (10.1.10.10) assigns IP addresses in the 10.1.10.0/24 pool, gateway 10.1.10.1, and DNS 10.1.10.10 to VLAN 10 clients.
+
+ACTUAL SERVICE STATE:
+An unauthorized home Wi-Fi router plugged into Switch0 port Fa0/2 acts as a Rogue DHCP Server, winning the race condition and issuing invalid IP configurations to VLAN 10 clients.
+
+EVIDENCE COMMAND:
+Laptop0 > Command Prompt > ipconfig /all
+
+EVIDENCE:
+Connection-specific DNS Suffix . : 
+Physical Address. . . . . . . . . : 0060.2F70.1111
+DHCP Enabled. . . . . . . . . . . : Yes
+IP Address. . . . . . . . . . . . : 192.168.0.5
+Subnet Mask . . . . . . . . . . . : 255.255.255.0
+Default Gateway . . . . . . . . . : 192.168.0.1
+DHCP Server . . . . . . . . . . . : 192.168.0.1
+
+SERVER EVIDENCE:
+Command: Switch0 > CLI > show dhcp snooping binding
+
+MacAddress         IpAddress        Lease(sec)  Type           VLAN  Interface
+-----------------  ---------------  ----------  -------------  ----  --------------------
+0060.2F70.1111     192.168.0.5      86400       dhcp-snooping  10    FastEthernet0/2
+
+Command: Switch0 > CLI > show interfaces status
+
+Port      Name               Status       Vlan       Duplex  Speed Type
+Fa0/1     Corp_DHCP_Server   connected    10         a-full  a-100 10/100BaseTX
+Fa0/2     Rogue_Router_Port  connected    10         a-full  a-100 10/100BaseTX
+Fa0/3     Laptop0_Port       connected    10         a-full  a-100 10/100BaseTX
+
+EXPECTED FAULT:
+An unauthorized SOHO router connected to Switch0 Fa0/2 is issuing rogue DHCP offers on VLAN 10 before the corporate DHCP server can respond.
+
+OSI LAYER:
+Layer 2 / Layer 7
+
+CONCEPT:
+rogue-dhcp-server-dhcp-snooping
+
+SEVERITY:
+High
+
+EXPECTED NEXT COMMAND:
+show ip dhcp snooping
+
+EXPECTED FIX:
+1. Shutdown/isolate the rogue switchport Fa0/2.
+2. Enable DHCP Snooping globally and on VLAN 10.
+3. Configure the official uplink/server interface (Fa0/1) as trusted.
+4. Renew IP lease on Laptop0.
+
+FIX COMMAND:
+Switch0(config)# interface FastEthernet0/2
+Switch0(config-if)# shutdown
+Switch0(config-if)# exit
+Switch0(config)# ip dhcp snooping
+Switch0(config)# ip dhcp snooping vlan 10
+Switch0(config)# interface FastEthernet0/1
+Switch0(config-if)# ip dhcp snooping trust
+Switch0(config-if)# exit
+Laptop0> ipconfig /renew

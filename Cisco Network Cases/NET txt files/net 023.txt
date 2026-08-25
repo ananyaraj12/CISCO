@@ -1,0 +1,61 @@
+CASE ID: NET-023
+
+TITLE:
+Static NAT Port Forwarding Success via Static IP Alignment
+
+SYMPTOM:
+None (Normal Operation). External client Laptop0 successfully accesses the internal web server via public NAT IP (`[http://203.0.113.1:8080](http://203.0.113.1:8080)`).
+
+TOPOLOGY:
+Laptop0 -> Router0 -> Switch0 -> Server0
+
+LAPTOP0 NETWORK:
+IP Address: 203.0.113.50
+Subnet Mask: 255.255.255.0
+Default Gateway: 203.0.113.1
+DNS Server: 0.0.0.0
+
+EXPECTED SERVICE:
+Static NAT Port Forwarding (Translating Public Port 8080 to Private IP 192.168.1.50 Port 80)
+
+ACTUAL SERVICE STATE:
+Static NAT Port Forwarding ACTIVE and operational (Server0 assigned static IP matching Router0 NAT entry).
+
+EVIDENCE COMMAND:
+Laptop0 > Web Browser > URL: [http://203.0.113.1:8080](http://203.0.113.1:8080)
+
+EVIDENCE:
+Cisco Packet Tracer Welcome Web Page Loaded (HTTP 200 OK)
+
+SERVER EVIDENCE:
+Command: Router0 > CLI > ping 192.168.1.50
+
+Sending 5, 100-byte ICMP Echos to 192.168.1.50, timeout is 2 seconds:
+!!!!!
+Success rate is 100 percent (5/5), round-trip min/avg/max = 1/1/2 ms
+
+Command: Router0 > CLI > show ip nat translations
+
+Pro Inside global      Inside local       Outside local      Outside global
+tcp 203.0.113.1:8080   192.168.1.50:80    203.0.113.50:1025  203.0.113.50:1025
+
+EXPECTED FAULT:
+None (Correct Configuration). Server0 IP is statically pinned to 192.168.1.50, ensuring proper mapping with Router0 static NAT rules.
+
+OSI LAYER:
+Layer 3 / Layer 4
+
+CONCEPT:
+nat-ip-alignment-static
+
+SEVERITY:
+None
+
+EXPECTED NEXT COMMAND:
+Laptop0 > Web Browser > URL: [http://203.0.113.1:8080](http://203.0.113.1:8080)
+
+EXPECTED FIX:
+No fix required. System operating as intended.
+
+FIX COMMAND:
+N/A (System Operational)
