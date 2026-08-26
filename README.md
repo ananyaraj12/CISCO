@@ -1,160 +1,293 @@
 # NetSage AI
 
-NetSage AI is an AI-powered network diagnosis system designed to analyze common computer-networking issues and provide structured troubleshooting recommendations.
+## AI-Powered Network Diagnosis and Cisco Troubleshooting Assistant
 
-The system combines a rule-based network diagnostic engine with Google's Gemini API to generate explainable AI-based diagnoses. It also includes a human-review workflow that allows reviewers to accept, edit, or reject AI-generated diagnoses while maintaining a Responsible AI audit log.
+NetSage AI is an AI-powered network troubleshooting platform designed to help diagnose Cisco networking issues using structured network cases, rule-based validation, and Google Gemini.
 
----
+The system combines:
 
-## 🚀 Features
-
-- AI-powered network fault diagnosis
-- Rule-based network configuration checking
-- CSV-based network case dataset
-- Google Gemini integration
-- Structured AI diagnosis using Pydantic models
-- FastAPI REST API
-- Swagger/OpenAPI documentation
-- Human-in-the-loop review workflow
+- Cisco/network troubleshooting concepts
+- Rule-based diagnosis
+- AI-powered diagnosis using Gemini
+- Evidence-based reasoning
+- Human review and correction
 - Responsible AI logging
-- AI confidence scoring
-- Evidence-based diagnosis
-- Recommended next troubleshooting command
-- Suggested network fix steps
-- OSI layer and networking concept classification
-- Input validation and error handling
-- Automated backend test suite
-- Ground-truth protection from API responses
+- Analytics and dashboard visualization
+- A React-based frontend
+- A FastAPI backend
+
+The goal is to provide network engineers and learners with a structured workflow for identifying network problems, understanding their possible root causes, and receiving recommended troubleshooting commands and corrective steps.
 
 ---
 
-## 🏗️ System Architecture
+## Features
 
-```text
-                         ┌─────────────────────┐
-                         │     Client/User     │
-                         └──────────┬──────────┘
-                                    │
-                                    ▼
-                         ┌─────────────────────┐
-                         │     FastAPI API     │
-                         │                     │
-                         │ /health             │
-                         │ /diagnose           │
-                         │ /review             │
-                         └──────────┬──────────┘
-                                    │
-                    ┌───────────────┴────────────────┐
-                    │                                │
-                    ▼                                ▼
-          ┌──────────────────┐             ┌──────────────────┐
-          │ Dataset Loader   │             │ Human Review      │
-          │                  │             │ Service           │
-          │ cases.csv        │             │                  │
-          └────────┬─────────┘             └────────┬─────────┘
-                   │                                │
-                   ▼                                ▼
-          ┌──────────────────┐             ┌──────────────────┐
-          │ Diagnosis        │             │ Responsible AI   │
-          │ Service          │             │ Log              │
-          └────────┬─────────┘             │                  │
-                   │                       │ JSON audit log   │
-                   ▼                       └──────────────────┘
-          ┌──────────────────┐
-          │ Rule Checker     │
-          │                  │
-          │ Network Rules    │
-          └────────┬─────────┘
-                   │
-                   ▼
-          ┌──────────────────┐
-          │ Gemini Diagnosis │
-          │ Service          │
-          │                  │
-          │ Gemini API       │
-          └────────┬─────────┘
-                   │
-                   ▼
-          ┌──────────────────┐
-          │ Structured AI    │
-          │ Diagnosis        │
-          └──────────────────┘
+### 1. AI Network Diagnosis
+
+Users can select a network troubleshooting case and request an AI-generated diagnosis.
+
+The diagnosis provides:
+
+- Root cause
+- Confidence score
+- Supporting evidence
+- Recommended next command
+- Suggested fix steps
+- OSI layer
+- Networking concept
+
+Example request:
+
+```json
+{
+  "case_id": "NET-001"
+}
 ````
 
----
+Example response:
 
-## 🛠️ Tech Stack
-
-### Backend
-
-* Python
-* FastAPI
-* Uvicorn
-* Pydantic
-* Pytest
-
-### AI / LLM
-
-* Google Gemini API
-* Gemini Flash model
-
-### Data
-
-* CSV
-* JSON
-
-### Development
-
-* Git
-* GitHub
-* Python Virtual Environment
+```json
+{
+  "case_id": "NET-001",
+  "diagnosis": {
+    "root_cause": "Indeterminate root cause due to missing network-state data.",
+    "confidence": 0.3,
+    "evidence": [
+      "Structured network-state data is unavailable in the input."
+    ],
+    "next_command": "show ip interface brief",
+    "fix_steps": [
+      "Run 'show ip interface brief' to check interface status.",
+      "Verify VLAN configuration.",
+      "Verify IP address and default gateway configuration."
+    ],
+    "osi_layer": "Data Link",
+    "concept": "Default Gateway Connectivity"
+  }
+}
+```
 
 ---
 
-## 📁 Project Structure
+## 2. Gemini AI Integration
+
+NetSage AI uses Google Gemini to generate structured network diagnoses.
+
+The Gemini integration is isolated inside the backend so that:
+
+* API credentials remain server-side
+* The frontend never receives the Gemini API key
+* AI responses are converted into the application's structured diagnosis format
+* Errors from the AI service are handled safely
+
+The API key is stored through environment configuration and should never be committed to Git.
+
+---
+
+## 3. Rule-Based Network Validation
+
+Before or alongside AI reasoning, the backend can perform deterministic rule checks on available network information.
+
+This helps provide:
+
+* Evidence for the diagnosis
+* Additional validation
+* More reliable troubleshooting
+* A separation between deterministic checks and generative AI
+
+---
+
+## 4. Human Review
+
+NetSage AI supports human review of AI-generated diagnoses.
+
+A reviewer can:
+
+* Accept the AI diagnosis
+* Edit the diagnosis
+* Provide a correction
+* Explain the reason for the correction
+
+Supported decisions include:
 
 ```text
-netsage AI/
+ACCEPTED
+EDITED
+REJECTED
+```
+
+Example review request:
+
+```json
+{
+  "case_id": "NET-001",
+  "ai_root_cause": "Possible gateway connectivity issue.",
+  "ai_confidence": 0.8,
+  "decision": "EDITED",
+  "human_correction": "The diagnosis requires additional interface evidence.",
+  "correction_reason": "The original diagnosis was incomplete.",
+  "reviewer": "network-admin"
+}
+```
+
+---
+
+## 5. Responsible AI Logging
+
+Human review decisions are stored in the Responsible AI log.
+
+The log records information such as:
+
+* Case ID
+* AI diagnosis
+* AI confidence
+* Human decision
+* Human correction
+* Correction reason
+* Reviewer
+* Timestamp
+
+Review records are appended rather than overwriting previous records.
+
+This provides an audit trail for evaluating AI performance and human corrections.
+
+---
+
+## 6. Analytics Dashboard
+
+The frontend provides an interactive dashboard for viewing system information and review metrics.
+
+The dashboard can display information such as:
+
+* Total cases
+* AI diagnoses
+* Human reviews
+* Accepted diagnoses
+* Edited diagnoses
+* Rejected diagnoses
+* Confidence information
+* OSI layer distribution
+* Case distribution
+* Review statistics
+
+The frontend retrieves data dynamically from the FastAPI backend.
+
+---
+
+## 7. Case Management
+
+The application provides access to available network troubleshooting cases.
+
+Each case can contain information such as:
+
+* Case ID
+* Network topology
+* Scenario
+* Evidence
+* Packet Tracer resources
+* Network configuration information
+
+Ground-truth diagnosis information is kept internal to the backend and is not unnecessarily exposed through the public API responses.
+
+---
+
+# System Architecture
+
+```text
+                    ┌──────────────────────┐
+                    │      User / Admin    │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │   React Frontend     │
+                    │   Cisco Dashboard    │
+                    └──────────┬───────────┘
+                               │
+                         HTTP / JSON
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │    FastAPI Backend   │
+                    └──────────┬───────────┘
+                               │
+              ┌────────────────┼────────────────┐
+              │                │                │
+              ▼                ▼                ▼
+       ┌────────────┐   ┌──────────────┐  ┌──────────────┐
+       │ Case/Data  │   │ Rule Checker │  │ Review       │
+       │ Loader     │   │              │  │ Service      │
+       └────────────┘   └──────────────┘  └──────────────┘
+              │                │                │
+              │                │                ▼
+              │                │       Responsible AI Log
+              │                │
+              └────────────┬───┘
+                           ▼
+                  ┌─────────────────┐
+                  │ Diagnosis       │
+                  │ Service         │
+                  └────────┬────────┘
+                           │
+                           ▼
+                  ┌─────────────────┐
+                  │ Gemini AI       │
+                  │ Integration     │
+                  └─────────────────┘
+```
+
+---
+
+# Project Structure
+
+```text
+netsage-ai/
 │
 ├── backend/
 │   │
 │   ├── api/
-│   │   ├── __init__.py
 │   │   ├── main.py
 │   │   ├── models.py
 │   │   └── test_api.py
 │   │
+│   ├── data/
+│   │   ├── responsible_ai_log.json
+│   │   └── ...
+│   │
 │   ├── dataset/
-│   │   ├── __init__.py
 │   │   ├── loader.py
 │   │   └── test_loader.py
 │   │
 │   ├── diagnosis/
-│   │   ├── __init__.py
 │   │   ├── service.py
 │   │   └── test_service.py
 │   │
 │   ├── llm/
-│   │   ├── __init__.py
 │   │   ├── service.py
 │   │   └── test_service.py
 │   │
 │   ├── review/
-│   │   ├── __init__.py
 │   │   ├── models.py
 │   │   ├── service.py
 │   │   └── test_review.py
 │   │
-│   ├── rule_checker/
-│   │   ├── __init__.py
-│   │   ├── checker.py
-│   │   └── test_checker.py
+│   └── rule_checker/
+│       ├── checker.py
+│       └── test_checker.py
+│
+├── frontend/
 │   │
-│   ├── data/
-│   │   ├── cases.csv
-│   │   └── responsible_ai_log.json
+│   ├── public/
+│   ├── src/
+│   │   ├── api/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── App.jsx
+│   │   └── ...
 │   │
-│   └── check_env.py
+│   ├── package.json
+│   ├── vite.config.js
+│   └── ...
 │
 ├── .env
 ├── .gitignore
@@ -162,26 +295,219 @@ netsage AI/
 └── README.md
 ```
 
-> **Important:** The `.env` file should not be committed to GitHub because it contains the Gemini API key.
+---
+
+# Technology Stack
+
+## Frontend
+
+* React
+* Vite
+* JavaScript
+* HTML
+* CSS
+* React components
+* REST API integration
+
+## Backend
+
+* Python
+* FastAPI
+* Uvicorn
+* Pydantic
+* Pytest
+
+## AI
+
+* Google Gemini API
+
+## Data
+
+* JSON
+* CSV
+* Local network troubleshooting datasets
 
 ---
 
-# ⚙️ Installation & Setup
+# API Endpoints
+
+## Health Check
+
+### `GET /health`
+
+Checks whether the backend is running.
+
+Example:
+
+```text
+GET http://127.0.0.1:8000/health
+```
+
+Expected response:
+
+```json
+{
+  "status": "ok"
+}
+```
+
+---
+
+## Diagnosis
+
+### `POST /diagnose`
+
+Generates an AI-assisted diagnosis for a network troubleshooting case.
+
+Request:
+
+```json
+{
+  "case_id": "NET-001"
+}
+```
+
+The endpoint returns a structured diagnosis containing:
+
+```text
+case_id
+diagnosis
+    root_cause
+    confidence
+    evidence
+    next_command
+    fix_steps
+    osi_layer
+    concept
+```
+
+---
+
+## Human Review
+
+### `POST /review`
+
+Stores a human review of an AI diagnosis.
+
+The review can contain:
+
+```text
+case_id
+ai_root_cause
+ai_confidence
+decision
+human_correction
+correction_reason
+reviewer
+```
+
+---
+
+## Cases
+
+### `GET /cases`
+
+Returns the available network troubleshooting cases required by the frontend.
+
+---
+
+## Evidence
+
+### `GET /cases/{case_id}/evidence`
+
+Returns available evidence associated with a case.
+
+---
+
+## Packet Tracer Resources
+
+### `GET /cases/{case_id}/packet-tracer`
+
+Provides Packet Tracer resources associated with a case when available.
+
+---
+
+## Review History
+
+### `GET /reviews`
+
+Returns stored human review information.
+
+---
+
+## AI Responses Log
+
+### `GET /logs/ai-responses`
+
+Provides AI diagnosis/review information required by the dashboard.
+
+---
+
+## Corrections Log
+
+### `GET /logs/corrections`
+
+Provides human correction information.
+
+---
+
+## Analytics
+
+### `GET /analytics`
+
+Returns aggregated metrics used by the frontend dashboard.
+
+---
+
+# Environment Configuration
+
+Create a `.env` file for local development.
+
+Example:
+
+```env
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_MODEL=your_gemini_model
+```
+
+For the frontend, configure the API base URL through Vite environment variables when required:
+
+```env
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
+Do not commit `.env` files or API keys to GitHub.
+
+The `.gitignore` should contain:
+
+```gitignore
+.env
+frontend/.env
+frontend/node_modules/
+frontend/dist/
+__pycache__/
+*.pyc
+.pytest_cache/
+```
+
+---
+
+# Installation
 
 ## 1. Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/netsage-ai.git
-cd netsage-ai
+git clone <your-repository-url>
+cd <repository-name>
 ```
-
-Replace `YOUR-USERNAME` with your GitHub username.
 
 ---
 
+# Backend Setup
+
 ## 2. Create a Virtual Environment
 
-### Windows
+Windows:
 
 ```powershell
 python -m venv .venv
@@ -195,92 +521,82 @@ Activate it:
 
 ---
 
-## 3. Install Dependencies
+## 3. Install Backend Dependencies
 
 ```powershell
 pip install -r requirements.txt
 ```
 
-If `requirements.txt` is not available, install the required packages:
-
-```powershell
-pip install fastapi uvicorn httpx python-dotenv pytest google-genai
-```
-
 ---
 
-# 🔑 Gemini API Configuration
+## 4. Configure Environment Variables
 
-Create a `.env` file in the project root:
-
-```env
-GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL=gemini-2.5-flash
-```
-
-Replace:
+Create:
 
 ```text
-your_gemini_api_key_here
+.env
 ```
 
-with your actual Gemini API key.
+and add the required Gemini configuration:
 
-### ⚠️ Security
-
-Never commit your API key to GitHub.
-
-Make sure `.gitignore` contains:
-
-```gitignore
-.env
-.venv/
-__pycache__/
-*.pyc
-.pytest_cache/
+```env
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_MODEL=your_gemini_model
 ```
 
 ---
 
-# ▶️ Running the Backend
+# Start the Backend
 
-Start the FastAPI server using:
+From the project root:
 
 ```powershell
-.venv\Scripts\python.exe -m uvicorn backend.api.main:app --reload
+.venv\Scripts\python.exe -m uvicorn backend.api.main:app --host 127.0.0.1 --port 8000
 ```
 
-The server will start at:
+The API will be available at:
 
 ```text
 http://127.0.0.1:8000
 ```
 
----
-
-# 📚 API Documentation
-
-Once the server is running, open:
+Swagger API documentation:
 
 ```text
 http://127.0.0.1:8000/docs
 ```
 
-FastAPI automatically provides an interactive Swagger UI where the API endpoints can be tested.
+---
+
+# Test the Backend
+
+Open another terminal in the project root.
+
+Run:
+
+```powershell
+.venv\Scripts\python -m pytest
+```
+
+A successful test run should show all available tests passing, with only intentionally skipped tests if applicable.
 
 ---
 
-# 🔍 API Endpoints
+# Test Backend Health
 
-## 1. Health Check
+With the backend running:
 
-### Request
-
-```http
-GET /health
+```powershell
+curl http://127.0.0.1:8000/health
 ```
 
-### Response
+In PowerShell, you can also use:
+
+```powershell
+Invoke-WebRequest http://127.0.0.1:8000/health -UseBasicParsing
+```
+
+Expected response:
 
 ```json
 {
@@ -290,15 +606,35 @@ GET /health
 
 ---
 
-# 🧠 2. Network Diagnosis
+# Test Diagnosis API
 
-### Endpoint
+With the backend running:
 
-```http
-POST /diagnose
+```powershell
+curl -X POST http://127.0.0.1:8000/diagnose `
+  -H "Content-Type: application/json" `
+  -d '{\"case_id\":\"NET-001\"}'
 ```
 
-### Request
+Expected result:
+
+```text
+HTTP 200 OK
+```
+
+with a structured diagnosis response.
+
+You can also test the endpoint directly through Swagger:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+Then:
+
+1. Open `POST /diagnose`
+2. Click **Try it out**
+3. Enter:
 
 ```json
 {
@@ -306,219 +642,111 @@ POST /diagnose
 }
 ```
 
-The API:
-
-1. Loads the requested network case from the dataset.
-2. Creates the diagnosis context.
-3. Runs rule-based network checks.
-4. Sends the relevant context to Gemini.
-5. Validates the generated response.
-6. Returns a structured AI diagnosis.
-
-### Example Response
-
-```json
-{
-  "case_id": "NET-001",
-  "diagnosis": {
-    "root_cause": "Unable to determine the definitive root cause due to missing network state information.",
-    "confidence": 0.3,
-    "evidence": [
-      "Structured network-state data is unavailable in the input."
-    ],
-    "next_command": "show ip interface brief",
-    "fix_steps": [
-      "Verify interface status.",
-      "Verify VLAN configuration.",
-      "Verify IP address and default gateway configuration."
-    ],
-    "osi_layer": "Network",
-    "concept": "IP Connectivity"
-  }
-}
-```
+4. Click **Execute**
+5. Verify that the response is `200 OK`.
 
 ---
 
-# 👨‍💻 3. Human Review
+# Frontend Setup
 
-### Endpoint
+Open a second terminal.
 
-```http
-POST /review
-```
-
-The review endpoint allows a human reviewer to evaluate an AI-generated diagnosis.
-
-A reviewer can:
-
-* Accept the diagnosis
-* Edit the diagnosis
-* Reject the diagnosis
-
----
-
-## ACCEPTED Review
-
-### Request
-
-```json
-{
-  "case_id": "NET-001",
-  "ai_root_cause": "Unable to determine the definitive root cause.",
-  "ai_confidence": 0.3,
-  "decision": "ACCEPTED",
-  "reviewer": "reviewer-name"
-}
-```
-
----
-
-## EDITED Review
-
-```json
-{
-  "case_id": "NET-001",
-  "ai_root_cause": "Unable to determine the definitive root cause.",
-  "ai_confidence": 0.3,
-  "decision": "EDITED",
-  "human_correction": "The diagnosis should be corrected after reviewing the available network evidence.",
-  "correction_reason": "The original diagnosis was incomplete.",
-  "reviewer": "reviewer-name"
-}
-```
-
----
-
-## REJECTED Review
-
-```json
-{
-  "case_id": "NET-001",
-  "ai_root_cause": "Unable to determine the definitive root cause.",
-  "ai_confidence": 0.3,
-  "decision": "REJECTED",
-  "human_correction": "The generated diagnosis is not sufficiently supported by the available evidence.",
-  "correction_reason": "Insufficient evidence.",
-  "reviewer": "reviewer-name"
-}
-```
-
----
-
-# 🤖 AI Diagnosis Output
-
-Each diagnosis contains the following information:
-
-| Field          | Description                                               |
-| -------------- | --------------------------------------------------------- |
-| `root_cause`   | AI-generated explanation of the suspected network problem |
-| `confidence`   | Confidence score between 0 and 1                          |
-| `evidence`     | Evidence supporting the diagnosis                         |
-| `next_command` | Recommended network troubleshooting command               |
-| `fix_steps`    | Suggested steps to resolve the issue                      |
-| `osi_layer`    | Relevant OSI layer                                        |
-| `concept`      | Networking concept involved                               |
-
----
-
-# 🧪 Testing
-
-The project contains automated tests for all major backend components.
-
-Run the complete test suite:
+Move into the frontend directory:
 
 ```powershell
-.venv\Scripts\python.exe -m pytest
+cd frontend
 ```
 
-Current test coverage includes:
+Install dependencies:
+
+```powershell
+npm install
+```
+
+---
+
+# Start the Frontend
+
+Run:
+
+```powershell
+npm run dev
+```
+
+Vite will display the local frontend URL in the terminal.
+
+Open that URL in your browser.
+
+The frontend communicates with the FastAPI backend through the configured API base URL.
+
+---
+
+# Frontend + Backend Workflow
+
+The complete application workflow is:
 
 ```text
-API
-Dataset Loader
-Diagnosis Service
-Gemini LLM Service
-Rule Checker
+User opens dashboard
+        │
+        ▼
+Frontend loads cases
+        │
+        ▼
+User selects a case
+        │
+        ▼
+Frontend sends POST /diagnose
+        │
+        ▼
+FastAPI receives case_id
+        │
+        ▼
+Dataset / evidence loaded
+        │
+        ▼
+Rule checker evaluates available information
+        │
+        ▼
+Diagnosis service processes the case
+        │
+        ▼
+Gemini generates structured diagnosis
+        │
+        ▼
+Backend validates response
+        │
+        ▼
+Diagnosis returned to frontend
+        │
+        ▼
+User reviews AI diagnosis
+        │
+        ▼
 Human Review
+        │
+        ├── ACCEPTED
+        ├── EDITED
+        └── REJECTED
+        │
+        ▼
+Review saved
+        │
+        ▼
+Responsible AI Log updated
+        │
+        ▼
+Analytics updated
 ```
-
-The backend test suite currently verifies:
-
-* API endpoints
-* Request validation
-* Response schemas
-* Case ID lookup
-* Case ID normalization
-* Dataset loading
-* Rule checking
-* Diagnosis orchestration
-* Gemini service behavior
-* Human review validation
-* Responsible AI logging
-* Multiple sequential reviews
-* Error handling
-* Environment configuration
-* End-to-end mocked API workflow
 
 ---
 
-# 🛡️ Responsible AI
+# Error Handling
 
-NetSage AI includes a human-in-the-loop review system.
+The backend uses controlled exception handling.
 
-AI-generated diagnoses are not treated as automatically correct.
+Internal errors are not exposed directly to the client.
 
-Human reviewers can evaluate each diagnosis using three decisions:
-
-```text
-ACCEPTED
-EDITED
-REJECTED
-```
-
-Reviews are stored in:
-
-```text
-backend/data/responsible_ai_log.json
-```
-
-The log stores information such as:
-
-* Case ID
-* AI diagnosis
-* AI confidence
-* Human decision
-* Human correction
-* Correction reason
-* Reviewer
-* Timestamp
-
-This provides an audit trail for evaluating AI performance and identifying cases where human intervention was required.
-
----
-
-# 🔐 Security
-
-The application follows several security practices:
-
-### API Key Protection
-
-The Gemini API key is stored in an environment variable:
-
-```env
-GEMINI_API_KEY=...
-```
-
-It is not returned through API responses.
-
-### Ground Truth Protection
-
-Expected answers and ground-truth fields from the dataset are kept internal to the backend and are not exposed through the `/diagnose` API response.
-
-### Error Protection
-
-Unexpected backend errors return a safe response:
+For unexpected backend errors, the API returns:
 
 ```json
 {
@@ -526,222 +754,297 @@ Unexpected backend errors return a safe response:
 }
 ```
 
-Internal stack traces are logged only on the backend during debugging and are not exposed to API clients.
+Detailed exceptions and stack traces are logged server-side for debugging.
+
+Sensitive information such as:
+
+* Gemini API keys
+* Internal exception details
+* Internal file paths
+* Stack traces
+
+should not be returned in API responses.
 
 ---
 
-# 📊 Network Cases
+# Security Considerations
 
-The dataset contains network troubleshooting cases such as:
+NetSage AI follows several security practices:
 
-* Wrong VLAN assignment
-* Trunk disabled
-* Missing VLAN
-* VLAN not allowed on trunk
-* Access port configured as trunk
-* Router subinterface shutdown
-* Incorrect gateway IP
-* Incorrect PC default gateway
-* ACL blocking a host
-* Router VLAN subinterface shutdown
+### API Key Protection
 
-Cases are identified using IDs such as:
+Gemini credentials are stored in environment variables.
 
-```text
-NET-001
-NET-002
-NET-003
-...
-NET-030
-```
+They are not included in frontend code.
+
+### Ground Truth Protection
+
+Ground-truth fields used internally for evaluation are not unnecessarily exposed through diagnosis responses.
+
+### Error Protection
+
+Internal exceptions are logged on the server rather than returned to users.
+
+### Git Protection
+
+Environment files and frontend dependencies are excluded through `.gitignore`.
 
 ---
 
-# 🔄 Diagnosis Workflow
+# Testing
 
-```text
-User
-  │
-  ▼
-POST /diagnose
-  │
-  ▼
-Case ID Validation
-  │
-  ▼
-Load Case from cases.csv
-  │
-  ▼
-Prepare Diagnosis Context
-  │
-  ├───────────────┐
-  ▼               ▼
-Rule Checker     Network Context
-  │               │
-  └───────┬───────┘
-          ▼
-   Gemini Diagnosis
-          │
-          ▼
-   Structured Output
-          │
-          ▼
-    Pydantic Validation
-          │
-          ▼
-     API Response
-          │
-          ▼
-    Human Review
-          │
-     ┌────┼────┐
-     ▼    ▼    ▼
- ACCEPT EDIT REJECT
-     │    │    │
-     └────┼────┘
-          ▼
- Responsible AI Log
-```
+The backend contains tests for:
 
----
+* API endpoints
+* Dataset loading
+* Diagnosis service
+* Gemini service
+* Review service
+* Rule checker
+* API integration
+* Human review workflow
 
-# 📈 Error Handling
-
-The API handles different classes of errors:
-
-| Status Code | Meaning                             |
-| ----------- | ----------------------------------- |
-| `200`       | Successful request                  |
-| `400`       | Invalid request/business validation |
-| `404`       | Requested case does not exist       |
-| `422`       | Invalid request body                |
-| `500`       | Unexpected backend error            |
-
-Example for an invalid case:
-
-```json
-{
-  "case_id": "NET-999"
-}
-```
-
-Response:
-
-```json
-{
-  "detail": "Requested case does not exist."
-}
-```
-
----
-
-# 🧑‍💻 Development
-
-Run the application in development mode:
+Run all tests:
 
 ```powershell
-.venv\Scripts\python.exe -m uvicorn backend.api.main:app --reload
+.venv\Scripts\python -m pytest
 ```
 
-Then open:
+Example successful result:
+
+```text
+85 passed, 1 skipped
+```
+
+The exact number may change as new tests are added.
+
+---
+
+# Development Workflow
+
+Recommended development workflow:
+
+```text
+1. Start backend
+        ↓
+2. Verify /health
+        ↓
+3. Start frontend
+        ↓
+4. Open dashboard
+        ↓
+5. Load cases
+        ↓
+6. Run diagnosis
+        ↓
+7. Review diagnosis
+        ↓
+8. Submit human review
+        ↓
+9. Verify analytics/logs
+        ↓
+10. Run pytest
+        ↓
+11. Run frontend build
+        ↓
+12. Commit changes
+```
+
+---
+
+# Frontend Production Build
+
+From the project root:
+
+```powershell
+npm --prefix frontend run build
+```
+
+Or:
+
+```powershell
+cd frontend
+npm run build
+```
+
+The production build is generated in:
+
+```text
+frontend/dist/
+```
+
+This directory should not be committed to Git.
+
+---
+
+# API Documentation
+
+FastAPI automatically provides interactive API documentation.
+
+Once the backend is running, open:
 
 ```text
 http://127.0.0.1:8000/docs
 ```
 
----
+You can use Swagger UI to test:
 
-# 📌 Example Complete Workflow
-
-### Step 1 — Start the server
-
-```powershell
-.venv\Scripts\python.exe -m uvicorn backend.api.main:app --reload
-```
-
-### Step 2 — Open Swagger
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-### Step 3 — Diagnose a case
-
-```json
-{
-  "case_id": "NET-001"
-}
-```
-
-### Step 4 — Review the diagnosis
-
-Submit the generated diagnosis to:
-
-```text
-POST /review
-```
-
-### Step 5 — Choose a review decision
-
-```text
-ACCEPTED
-```
-
-or
-
-```text
-EDITED
-```
-
-or
-
-```text
-REJECTED
-```
-
-### Step 6 — Verify the audit log
-
-Check:
-
-```text
-backend/data/responsible_ai_log.json
-```
+* Health check
+* Diagnosis
+* Reviews
+* Cases
+* Evidence
+* Logs
+* Analytics
 
 ---
 
-# 📝 Current Project Status
+# Responsible AI
+
+Human oversight is a core part of NetSage AI.
+
+The system does not treat AI-generated diagnoses as automatically correct.
+
+Instead:
 
 ```text
-Backend Architecture        ✅ Complete
-CSV Dataset Integration     ✅ Complete
-Rule-Based Diagnosis        ✅ Complete
-Gemini Integration          ✅ Complete
-FastAPI API Layer           ✅ Complete
-Human Review Workflow       ✅ Complete
-Responsible AI Logging      ✅ Complete
-API Validation              ✅ Complete
-Error Handling              ✅ Complete
-Automated Testing           ✅ Complete
-Swagger API Documentation   ✅ Complete
+AI Diagnosis
+     ↓
+Human Review
+     ↓
+Accept / Edit / Reject
+     ↓
+Responsible AI Log
+```
+
+This enables:
+
+* Human oversight
+* Error identification
+* Correction tracking
+* AI performance evaluation
+* Auditability
+
+---
+
+# Current Status
+
+### Backend
+
+* FastAPI API implemented
+* Gemini integration implemented
+* Diagnosis workflow implemented
+* Rule checker implemented
+* Human review implemented
+* Responsible AI logging implemented
+* Analytics endpoints implemented
+* API error handling implemented
+* Backend tests passing
+
+### Frontend
+
+* React dashboard implemented
+* Backend API integration implemented
+* Dynamic case loading implemented
+* Dynamic diagnosis workflow implemented
+* Human review workflow integrated
+* Analytics connected to backend
+* Logs connected to backend
+* Vite development setup configured
+
+### Integration
+
+```text
+React Frontend
+      ↕
+FastAPI REST API
+      ↕
+Diagnosis + Review Services
+      ↕
+Gemini + Local Dataset
 ```
 
 ---
 
-# 🚀 Future Improvements
+# Future Improvements
 
-Possible future improvements include:
+Potential future improvements include:
 
-* Frontend dashboard
-* Network topology visualization
 * Cisco Packet Tracer integration
-* More network fault cases
-* Real-time network monitoring
-* Authentication and authorization
-* Database-backed review storage
-* Reviewer dashboard
-* AI performance analytics
-* Diagnosis accuracy metrics
-* Confidence calibration
-* Model comparison
-* Deployment using Docker
-* Cloud deployment
+* More network troubleshooting cases
+* Improved evidence extraction
+* Advanced network topology visualization
+* Authentication and role-based access
+* Database-backed persistence
+* Improved AI evaluation metrics
+* Automated diagnosis benchmarking
+* More detailed Responsible AI analytics
+* Deployment to a cloud environment
+* CI/CD pipeline
+* Containerized deployment using Docker
+
+---
+
+# Contributing
+
+Contributions are welcome.
+
+Recommended process:
+
+```text
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run backend tests
+5. Run frontend build
+6. Verify the API
+7. Commit your changes
+8. Push the branch
+9. Open a pull request
+```
+
+Before committing:
+
+```powershell
+.venv\Scripts\python -m pytest
+```
+
+and:
+
+```powershell
+npm --prefix frontend run build
+```
+
+---
+
+# License
+
+This project is developed for educational, research, and network troubleshooting purposes.
+
+Add the appropriate license here if the project is released under a specific open-source license.
+
+---
+
+# Project Goal
+
+NetSage AI aims to combine **networking knowledge, deterministic troubleshooting, generative AI, and human expertise** into a single platform for explainable and responsible network diagnosis.
+
+The project focuses not only on generating an answer, but also on showing:
+
+```text
+What is the problem?
+        ↓
+Why does the AI think it is the problem?
+        ↓
+What evidence supports it?
+        ↓
+What should be checked next?
+        ↓
+How should it be fixed?
+        ↓
+Was the AI diagnosis correct?
+        ↓
+What did the human reviewer decide?
+```
+
+This creates a complete AI-assisted network troubleshooting workflow rather than a simple chatbot.
