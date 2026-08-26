@@ -8,5 +8,25 @@
     "correction_reason": "string",
     "reviewer": "string",
     "timestamp": "2026-08-25T19:44:33.508740"
+  },
+  {
+    "case_id": "NET-001",
+    "ai_root_cause": "Cannot definitively determine the root cause because mandatory command outputs (interface statuses, VLAN assignments, IP configurations) are missing from the input data.",
+    "ai_confidence": 0.3,
+    "decision": "ACCEPTED",
+    "human_correction": null,
+    "correction_reason": null,
+    "reviewer": "test-reviewer",
+    "timestamp": "2026-08-26T07:35:00.941045"
+  },
+  {
+    "case_id": "NET-001",
+    "ai_root_cause": "Cannot definitively determine the root cause because mandatory command outputs (interface statuses, VLAN assignments, IP configurations) are missing from the input data.",
+    "ai_confidence": 0.3,
+    "decision": "EDITED",
+    "human_correction": "The diagnosis should be corrected after reviewing the available network evidence.",
+    "correction_reason": "Human review identified that the original diagnosis was incomplete.",
+    "reviewer": "test-reviewer",
+    "timestamp": "2026-08-26T07:38:33.811898"
   }
 ]
