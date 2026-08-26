@@ -286,4 +286,89 @@ def test_api_e2e_mocked_gemini_diagnosis_and_review(mock_gemini_service, temp_lo
         assert record["reviewer"] == "e2e_test_reviewer"
 
 
+def test_get_all_cases():
+    response = client.get("/cases")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) > 0
+    # Ensure ground truth fields are excluded
+    for c in data:
+        assert "expected_fault" not in c
+        assert "expected_next_command" not in c
+        assert "expected_fix" not in c
+        assert "case_id" in c
+        assert "symptom" in c
+
+
+def test_get_case_by_id_success():
+    response = client.get("/cases/NET-001")
+    assert response.status_code == 200
+    c = response.json()
+    assert c["case_id"] == "NET-001"
+    assert "expected_fault" not in c
+
+
+def test_get_case_by_id_not_found():
+    response = client.get("/cases/NET-999")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Requested case does not exist."
+
+
+def test_get_case_evidence():
+    response = client.get("/cases/NET-001/evidence")
+    assert response.status_code == 200
+    data = response.json()
+    assert "files" in data
+    assert "evidence_info.txt" in data["files"]
+    assert "topology_map.txt" in data["files"]
+    assert "evidence_text" in data
+
+
+def test_get_packet_tracer_files():
+    response = client.get("/packet-tracer-files")
+    assert response.status_code == 200
+    assert response.json() == ["evidence_info.txt", "topology_map.txt"]
+
+
+def test_get_review_history_and_logs(temp_log_file):
+    # submit one review
+    payload = {
+        "case_id": "NET-001",
+        "ai_root_cause": "Test Cause",
+        "ai_confidence": 0.9,
+        "decision": "EDITED",
+        "human_correction": "Correct Cause",
+        "correction_reason": "Reason",
+        "reviewer": "reviewer_1"
+    }
+    client.post("/review", json=payload)
+    
+    # Check history
+    response = client.get("/review/history")
+    assert response.status_code == 200
+    history = response.json()
+    assert len(history) == 1
+    assert history[0]["case_id"] == "NET-001"
+    
+    # Check ai-responses
+    response_ai = client.get("/logs/ai-responses")
+    assert response_ai.status_code == 200
+    assert len(response_ai.json()) == 1
+
+    # Check corrections
+    response_corr = client.get("/logs/corrections")
+    assert response_corr.status_code == 200
+    assert len(response_corr.json()) == 1
+
+
+def test_get_analytics(temp_log_file):
+    response = client.get("/analytics")
+    assert response.status_code == 200
+    data = response.json()
+    assert "total_cases" in data
+    assert data["total_cases"] == 30
+    assert "human_ai_agreement_rate" in data
+
+
+
 
