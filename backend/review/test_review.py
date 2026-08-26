@@ -1,7 +1,16 @@
 import pytest
 import os
+import json
 from backend.review.models import HumanReview, DecisionEnum
-from backend.review.service import create_review, save_review, load_reviews, calculate_statistics
+from backend.review.service import (
+    create_review,
+    save_review,
+    load_reviews,
+    calculate_statistics,
+    submit_ai_diagnosis_review,
+)
+from backend.llm.models import AIDiagnosis
+
 
 @pytest.fixture
 def base_review_data():
@@ -188,3 +197,174 @@ def test_save_and_load_reviews(tmp_path, base_review_data):
     assert loaded[1].case_id == "CASE-002"
     assert loaded[1].decision == DecisionEnum.EDITED
     assert loaded[1].human_correction == "Correction details"
+
+@pytest.fixture
+def sample_ai_diagnosis():
+    """Fixture providing a sample AIDiagnosis model output."""
+    return AIDiagnosis(
+        root_cause="VLAN mismatch between Switch 1 and Router 1",
+        confidence=0.85,
+        evidence=["Ping failed", "VLAN 10 not declared"],
+        next_command="show vlan brief",
+        fix_steps=["configure terminal", "vlan 10"],
+        osi_layer="Layer 2",
+        concept="VLAN"
+    )
+
+def test_submit_accepted_review(tmp_path, sample_ai_diagnosis):
+    """Verify that submitting an ACCEPTED review succeeds without correction info."""
+    temp_file = tmp_path / "test_responsible_ai_log.json"
+    
+    review = submit_ai_diagnosis_review(
+        case_id="NET-001",
+        ai_diagnosis=sample_ai_diagnosis,
+        reviewer="senior_engineer",
+        decision=DecisionEnum.ACCEPTED,
+        filepath=str(temp_file)
+    )
+    
+    assert review.case_id == "NET-001"
+    assert review.ai_root_cause == sample_ai_diagnosis.root_cause
+    assert review.ai_confidence == sample_ai_diagnosis.confidence
+    assert review.decision == DecisionEnum.ACCEPTED
+    assert review.reviewer == "senior_engineer"
+    assert review.human_correction is None
+    
+    loaded = load_reviews(str(temp_file))
+    assert len(loaded) == 1
+    assert loaded[0].decision == DecisionEnum.ACCEPTED
+
+def test_submit_edited_review(tmp_path, sample_ai_diagnosis):
+    """Verify that submitting an EDITED review succeeds when correction and reason are provided."""
+    temp_file = tmp_path / "test_responsible_ai_log.json"
+    
+    review = submit_ai_diagnosis_review(
+        case_id="NET-001",
+        ai_diagnosis=sample_ai_diagnosis,
+        reviewer="senior_engineer",
+        decision=DecisionEnum.EDITED,
+        human_correction="Actually it is VLAN 20 mismatch",
+        correction_reason="Verified by show interface trunk command",
+        filepath=str(temp_file)
+    )
+    
+    assert review.decision == DecisionEnum.EDITED
+    assert review.human_correction == "Actually it is VLAN 20 mismatch"
+    assert review.correction_reason == "Verified by show interface trunk command"
+
+    loaded = load_reviews(str(temp_file))
+    assert len(loaded) == 1
+    assert loaded[0].decision == DecisionEnum.EDITED
+    assert loaded[0].human_correction == "Actually it is VLAN 20 mismatch"
+
+def test_submit_rejected_review(tmp_path, sample_ai_diagnosis):
+    """Verify that submitting a REJECTED review succeeds when correction and reason are provided."""
+    temp_file = tmp_path / "test_responsible_ai_log.json"
+    
+    review = submit_ai_diagnosis_review(
+        case_id="NET-001",
+        ai_diagnosis=sample_ai_diagnosis,
+        reviewer="senior_engineer",
+        decision=DecisionEnum.REJECTED,
+        human_correction="Completely wrong; it's a physical cabling fault",
+        correction_reason="Cable is disconnected on port G0/1",
+        filepath=str(temp_file)
+    )
+    
+    assert review.decision == DecisionEnum.REJECTED
+    assert review.human_correction == "Completely wrong; it's a physical cabling fault"
+
+    loaded = load_reviews(str(temp_file))
+    assert len(loaded) == 1
+    assert loaded[0].decision == DecisionEnum.REJECTED
+
+def test_submit_invalid_edited_review_fails(tmp_path, sample_ai_diagnosis):
+    """Verify that submitting an EDITED review without correction info raises ValidationError/ValueError."""
+    temp_file = tmp_path / "test_responsible_ai_log.json"
+    
+    # Missing correction
+    with pytest.raises(ValueError) as excinfo:
+        submit_ai_diagnosis_review(
+            case_id="NET-001",
+            ai_diagnosis=sample_ai_diagnosis,
+            reviewer="senior_engineer",
+            decision=DecisionEnum.EDITED,
+            correction_reason="Missing human_correction",
+            filepath=str(temp_file)
+        )
+    assert "human_correction is required" in str(excinfo.value)
+    
+    # Missing reason
+    with pytest.raises(ValueError) as excinfo:
+        submit_ai_diagnosis_review(
+            case_id="NET-001",
+            ai_diagnosis=sample_ai_diagnosis,
+            reviewer="senior_engineer",
+            decision=DecisionEnum.EDITED,
+            human_correction="Correction without reason",
+            filepath=str(temp_file)
+        )
+    assert "correction_reason is required" in str(excinfo.value)
+
+def test_submit_invalid_rejected_review_fails(tmp_path, sample_ai_diagnosis):
+    """Verify that submitting a REJECTED review without correction info raises ValidationError/ValueError."""
+    temp_file = tmp_path / "test_responsible_ai_log.json"
+    
+    # Missing correction
+    with pytest.raises(ValueError) as excinfo:
+        submit_ai_diagnosis_review(
+            case_id="NET-001",
+            ai_diagnosis=sample_ai_diagnosis,
+            reviewer="senior_engineer",
+            decision=DecisionEnum.REJECTED,
+            correction_reason="Missing human_correction",
+            filepath=str(temp_file)
+        )
+    assert "human_correction is required" in str(excinfo.value)
+
+def test_submit_multiple_reviews_appended(tmp_path, sample_ai_diagnosis):
+    """Verify that multiple reviews are properly appended sequentially to the JSON file."""
+    temp_file = tmp_path / "test_responsible_ai_log.json"
+    
+    # Submit first
+    submit_ai_diagnosis_review(
+        case_id="NET-001",
+        ai_diagnosis=sample_ai_diagnosis,
+        reviewer="eng_1",
+        decision=DecisionEnum.ACCEPTED,
+        filepath=str(temp_file)
+    )
+    
+    # Submit second
+    submit_ai_diagnosis_review(
+        case_id="NET-002",
+        ai_diagnosis=sample_ai_diagnosis,
+        reviewer="eng_2",
+        decision=DecisionEnum.EDITED,
+        human_correction="Correction detail",
+        correction_reason="Reason detail",
+        filepath=str(temp_file)
+    )
+    
+    # Submit third
+    submit_ai_diagnosis_review(
+        case_id="NET-003",
+        ai_diagnosis=sample_ai_diagnosis,
+        reviewer="eng_3",
+        decision=DecisionEnum.REJECTED,
+        human_correction="Rejection correction",
+        correction_reason="Rejection reason",
+        filepath=str(temp_file)
+    )
+    
+    loaded = load_reviews(str(temp_file))
+    assert len(loaded) == 3
+    assert loaded[0].case_id == "NET-001"
+    assert loaded[1].case_id == "NET-002"
+    assert loaded[2].case_id == "NET-003"
+    
+    with open(temp_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+        assert isinstance(data, list)
+        assert len(data) == 3
+

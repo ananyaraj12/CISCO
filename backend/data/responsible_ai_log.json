@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "case_id": "string",
+    "ai_root_cause": "string",
+    "ai_confidence": 0.0,
+    "decision": "ACCEPTED",
+    "human_correction": "string",
+    "correction_reason": "string",
+    "reviewer": "string",
+    "timestamp": "2026-08-25T19:44:33.508740"
+  }
+]

@@ -1,7 +1,14 @@
 import os
 import json
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+from datetime import datetime
 from backend.review.models import HumanReview, DecisionEnum
+from backend.llm.models import AIDiagnosis
+
+DEFAULT_LOG_PATH = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "data", "responsible_ai_log.json")
+)
+
 
 def load_reviews(filepath: str) -> List[HumanReview]:
     """
@@ -82,3 +89,43 @@ def calculate_statistics(reviews: List[HumanReview]) -> Dict[str, Any]:
         "corrected_cases": corrected_cases,
         "ai_human_agreement_rate": ai_human_agreement_rate
     }
+
+def submit_ai_diagnosis_review(
+    case_id: str,
+    ai_diagnosis: AIDiagnosis,
+    reviewer: str,
+    decision: DecisionEnum,
+    human_correction: Optional[str] = None,
+    correction_reason: Optional[str] = None,
+    timestamp: Optional[str] = None,
+    filepath: Optional[str] = None
+) -> HumanReview:
+    """
+    Orchestration service connecting the AI diagnosis output to the Human Review module.
+    Validates the reviewer's input and appends the review record to responsible_ai_log.json.
+    """
+    if filepath is None:
+        filepath = DEFAULT_LOG_PATH
+        
+    if timestamp is None:
+        timestamp = datetime.utcnow().isoformat()
+        
+    review_data = {
+        "case_id": case_id,
+        "ai_root_cause": ai_diagnosis.root_cause,
+        "ai_confidence": ai_diagnosis.confidence,
+        "decision": decision,
+        "human_correction": human_correction,
+        "correction_reason": correction_reason,
+        "reviewer": reviewer,
+        "timestamp": timestamp
+    }
+    
+    # Validation is enforced automatically by HumanReview model_validator
+    review = HumanReview(**review_data)
+    
+    # Save/append to responsible_ai_log.json
+    save_review(review, filepath)
+    
+    return review
+
