@@ -1,4 +1,12 @@
 import os
+import traceback
+from dotenv import load_dotenv
+
+# Explicitly load .env from the project root directory
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+ENV_PATH = os.path.join(ROOT_DIR, ".env")
+load_dotenv(ENV_PATH)
+
 from fastapi import FastAPI, HTTPException
 from backend.dataset.loader import load_cases
 from backend.diagnosis.service import DiagnosisService
@@ -32,6 +40,7 @@ def diagnose_case(request: DiagnoseRequest):
     try:
         cases = load_cases(CSV_PATH)
     except Exception:
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail="Unexpected backend error occurred.")
 
     # Normalize lookup case-insensitively and strip whitespace to prevent mismatch
@@ -46,6 +55,7 @@ def diagnose_case(request: DiagnoseRequest):
         diagnosis_service = DiagnosisService()
         context = diagnosis_service.prepare_diagnosis_context(case)
     except Exception:
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail="Unexpected backend error occurred.")
 
     # 3. Call live/mocked Gemini via the GeminiDiagnosisService
@@ -53,6 +63,7 @@ def diagnose_case(request: DiagnoseRequest):
         llm_service = GeminiDiagnosisService()
         ai_diagnosis = llm_service.diagnose(context)
     except Exception:
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail="Unexpected backend error occurred.")
 
     # 4. Return structured response (guaranteed to not leak secrets/answers)
