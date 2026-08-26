@@ -1,6 +1,3 @@
-Absolutely — here is a **complete `README.md` in one single block** that you can directly copy-paste into GitHub.
-
-````markdown
 # NetSage AI
 
 NetSage AI is an AI-powered network diagnosis system designed to analyze common computer-networking issues and provide structured troubleshooting recommendations.
