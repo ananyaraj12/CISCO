@@ -983,48 +983,6 @@ Potential future improvements include:
 * CI/CD pipeline
 * Containerized deployment using Docker
 
----
-
-# Contributing
-
-Contributions are welcome.
-
-Recommended process:
-
-```text
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run backend tests
-5. Run frontend build
-6. Verify the API
-7. Commit your changes
-8. Push the branch
-9. Open a pull request
-```
-
-Before committing:
-
-```powershell
-.venv\Scripts\python -m pytest
-```
-
-and:
-
-```powershell
-npm --prefix frontend run build
-```
-
----
-
-# License
-
-This project is developed for educational, research, and network troubleshooting purposes.
-
-Add the appropriate license here if the project is released under a specific open-source license.
-
----
-
 # Project Goal
 
 NetSage AI aims to combine **networking knowledge, deterministic troubleshooting, generative AI, and human expertise** into a single platform for explainable and responsible network diagnosis.
