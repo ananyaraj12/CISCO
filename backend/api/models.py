@@ -12,6 +12,16 @@ class DiagnoseResponse(BaseModel):
     case_id: str
     diagnosis: AIDiagnosis
 
+class CaseResponse(BaseModel):
+    """Response schema representing a public network case details, excluding ground-truth secrets."""
+    case_id: str
+    title: str
+    symptom: str
+    topology: str
+    osi_layer: str
+    concept: str
+    severity: str
+
 class ReviewRequest(BaseModel):
     """Request schema for submitting a human review on an AI diagnosis."""
     case_id: str = Field(..., description="The identifier of the troubleshooting case.")
@@ -21,3 +31,4 @@ class ReviewRequest(BaseModel):
     human_correction: Optional[str] = Field(None, description="The human corrected root cause or feedback.")
     correction_reason: Optional[str] = Field(None, description="The reason behind the human correction or rejection.")
     reviewer: str = Field(..., description="The identifier/username of the network engineer performing the review.")
+
