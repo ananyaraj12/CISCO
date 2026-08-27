@@ -6,9 +6,15 @@ export default function KpiCards({ analytics, reviewHistory = [], cases = [] }) 
   const pktFiles = cases.length > 0 ? cases.length : (analytics?.packet_tracer_files ?? 30);
   const aiDiagnoses = cases.length > 0 ? cases.length : (analytics?.ai_diagnoses ?? 30);
   
-  const reviewedCount = reviewHistory.length;
-  const getDecision = (r) => String(r.decision || r.human_decision || '').toUpperCase();
-  const acceptedCount = reviewHistory.filter((r) => getDecision(r) === 'ACCEPTED').length;
+  const uniqueReviews = {};
+  (reviewHistory || []).forEach((r) => {
+    if (r.case_id && r.case_id.toLowerCase() !== 'string') {
+      uniqueReviews[r.case_id] = String(r.decision || r.human_decision || '').toUpperCase();
+    }
+  });
+
+  const reviewedCount = Object.keys(uniqueReviews).length;
+  const acceptedCount = Object.values(uniqueReviews).filter((d) => d === 'ACCEPTED').length;
 
   const agreement = reviewedCount > 0 
     ? ((acceptedCount / reviewedCount) * 100).toFixed(1) 

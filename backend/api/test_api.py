@@ -327,7 +327,12 @@ def test_get_case_evidence():
 def test_get_packet_tracer_files():
     response = client.get("/packet-tracer-files")
     assert response.status_code == 200
-    assert response.json() == ["evidence_info.txt", "topology_map.txt"]
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) > 0
+    assert "case_id" in data[0]
+    assert "filename" in data[0]
+
 
 
 def test_get_review_history_and_logs(temp_log_file):

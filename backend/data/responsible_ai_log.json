@@ -108,5 +108,65 @@
     "correction_reason": null,
     "reviewer": "Network Engineer",
     "timestamp": "2026-08-26T10:22:13.005083"
+  },
+  {
+    "case_id": "NET-001",
+    "ai_root_cause": "Indeterminate root cause due to missing show command outputs and structured network-state data for PC1, SW1, and R1.",
+    "ai_confidence": 0.3,
+    "decision": "ACCEPTED",
+    "human_correction": null,
+    "correction_reason": null,
+    "reviewer": "Network Engineer",
+    "timestamp": "2026-08-27T18:33:46.729918"
+  },
+  {
+    "case_id": "NET-001",
+    "ai_root_cause": "Indeterminate root cause due to missing show command outputs and structured network-state data for PC1, SW1, and R1.",
+    "ai_confidence": 0.3,
+    "decision": "ACCEPTED",
+    "human_correction": null,
+    "correction_reason": null,
+    "reviewer": "Network Engineer",
+    "timestamp": "2026-08-27T18:33:48.247769"
+  },
+  {
+    "case_id": "NET-002",
+    "ai_root_cause": "Indeterminate due to missing detailed show-command outputs and network-state data; potential causes include interface link down, VLAN mismatch, or incorrect IP/gateway configuration on PC1 or Router0.",
+    "ai_confidence": 0.3,
+    "decision": "ACCEPTED",
+    "human_correction": null,
+    "correction_reason": null,
+    "reviewer": "Network Engineer",
+    "timestamp": "2026-08-27T18:38:59.490162"
+  },
+  {
+    "case_id": "NET-002",
+    "ai_root_cause": "Indeterminate due to missing detailed show-command outputs and network-state data; potential causes include interface link down, VLAN mismatch, or incorrect IP/gateway configuration on PC1 or Router0.",
+    "ai_confidence": 0.3,
+    "decision": "ACCEPTED",
+    "human_correction": null,
+    "correction_reason": null,
+    "reviewer": "Network Engineer",
+    "timestamp": "2026-08-27T18:39:01.011219"
+  },
+  {
+    "case_id": "NET-004",
+    "ai_root_cause": "Unable to determine the exact root cause due to missing show-command outputs and structured interface configuration data for FastEthernet0/3 and VLAN 30.",
+    "ai_confidence": 0.4,
+    "decision": "REJECTED",
+    "human_correction": "gfufu",
+    "correction_reason": "tdt",
+    "reviewer": "Network Engineer",
+    "timestamp": "2026-08-27T18:50:04.307309"
+  },
+  {
+    "case_id": "NET-004",
+    "ai_root_cause": "Unable to determine the exact root cause due to missing show-command outputs and structured interface configuration data for FastEthernet0/3 and VLAN 30.",
+    "ai_confidence": 0.4,
+    "decision": "REJECTED",
+    "human_correction": "gfufu",
+    "correction_reason": "tdt",
+    "reviewer": "Network Engineer",
+    "timestamp": "2026-08-27T18:50:05.825131"
   }
 ]

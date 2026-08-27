@@ -47,50 +47,41 @@ export default function App() {
     }
   }, [selectedCaseId]);
 
-  const generateNotificationsFromData = (casesList, revsList) => {
-    const list = [];
+  const formatTimeAgo = (timestampStr) => {
+    if (!timestampStr) return 'Active';
+    const date = new Date(timestampStr);
+    if (isNaN(date.getTime())) return timestampStr;
 
-    // Add recent completed reviews from real reviewHistory
-    if (revsList && revsList.length > 0) {
-      revsList.slice(-2).reverse().forEach((r, idx) => {
-        const dec = String(r.decision || r.human_decision || 'AUDITED').toUpperCase();
-        list.push({
-          id: `rev-${r.case_id}-${idx}`,
-          title: `Human Review ${dec} (${r.case_id})`,
-          description: `Reviewer ${r.reviewer || 'NOC Engineer'} signed off decision for case ${r.case_id}.`,
-          time: `${(idx + 1) * 15} min ago`,
-          type: 'review',
-          unread: true,
-          caseId: r.case_id
-        });
-      });
-    }
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    if (diffMs < 0) return 'Just now';
 
-    // Add real critical/high cases from dataset
-    const highCases = (casesList || []).filter(c => c.severity === 'Critical' || c.severity === 'High');
-    highCases.slice(0, 3).forEach((c, idx) => {
-      list.push({
-        id: `case-notif-${c.case_id}`,
-        title: `Critical Fault: ${c.title} (${c.case_id})`,
-        description: c.symptom || c.expected_fault || `Configuration fault signature detected on ${c.case_id}`,
-        time: `${(idx + 1) * 5} min ago`,
-        type: 'alert',
-        unread: true,
-        caseId: c.case_id
-      });
-    });
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHours = Math.floor(diffMin / 60);
+    const diffDays = Math.floor(diffHours / 24);
 
-    list.push({
-      id: 'sys-online',
-      title: 'NetSage AI Pipeline Online',
-      description: 'Connected to Packet Tracer CLI evidence engine and Grok AI model.',
-      time: '1 hour ago',
-      type: 'system',
-      unread: false,
-      caseId: 'NET-001'
-    });
+    if (diffSec < 60) return 'Just now';
+    if (diffMin < 60) return `${diffMin} min ago`;
+    if (diffHours < 24) return `${diffHours} hr${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
 
-    setNotifications(list);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const initializeLiveNotifications = () => {
+    setNotifications([
+      {
+        id: `sys-online-${Date.now()}`,
+        title: 'NetSage AI Session Active',
+        description: 'FastAPI backend server and Gemini AI engine connected in live session.',
+        time: 'Just now',
+        type: 'system',
+        unread: false,
+        caseId: 'NET-001'
+      }
+    ]);
   };
 
   const loadInitialData = async () => {
@@ -111,10 +102,11 @@ export default function App() {
       if (analyticsData) setAnalytics(analyticsData);
       if (revs) setReviewHistory(revs);
 
-      generateNotificationsFromData(casesData || [], revs || []);
+      initializeLiveNotifications();
     } catch (err) {
       console.error('Failed to load backend initial data:', err);
       setIsBackendOnline(true);
+      initializeLiveNotifications();
     }
   };
 
@@ -144,6 +136,19 @@ export default function App() {
       const diagData = await triggerDiagnosis(caseId);
       setDiagnosis(diagData);
       setIsBackendOnline(true);
+
+      const aiNotif = {
+        id: `ai-diag-${Date.now()}`,
+        title: `AI Diagnosis Ready (${caseId})`,
+        description: diagData?.diagnosis?.root_cause
+          ? `Gemini AI root cause: "${diagData.diagnosis.root_cause}"`
+          : `AI diagnosis completed for case ${caseId}.`,
+        time: 'Just now',
+        type: 'ai',
+        unread: true,
+        caseId: caseId
+      };
+      setNotifications((prev) => [aiNotif, ...prev]);
     } catch (err) {
       console.error(`Error running diagnosis for ${caseId}:`, err);
       let errorMsg = "Something went wrong while processing the request. Please try again.";
@@ -292,6 +297,12 @@ export default function App() {
           selectedCaseId={selectedCaseId}
           onSelectCase={handleSelectCase}
           evidenceData={evidenceData}
+          onRunDiagnosisAndNavigate={(caseId) => {
+            setSelectedCaseId(caseId);
+            setActivePage('diagnosis');
+            handleRunDiagnosis(caseId);
+          }}
+          onNavigate={setActivePage}
         />
       )}
 

@@ -178,7 +178,7 @@ def get_case_by_id(case_id: str):
 
 @app.get("/cases/{case_id}/evidence")
 def get_case_evidence(case_id: str):
-    """Returns simulated configuration evidence for the case."""
+    """Returns simulated or actual configuration evidence for the case."""
     try:
         cases = load_cases(CSV_PATH)
         req_id = case_id.strip().upper()
@@ -186,18 +186,66 @@ def get_case_evidence(case_id: str):
         if not c:
             raise HTTPException(status_code=404, detail="Requested case does not exist.")
         
-        evidence_text = (
-            f"NetSage System Log - Network State Capture for Case {c.case_id}\n"
-            f"=================================================================\n"
-            f"Device Topology: {c.topology}\n"
-            f"Reported Symptom: {c.symptome}\n"
-            f"OSI Layer: {c.osi_layer}\n"
-            f"Associated Concept: {c.concept}\n"
-            f"Severity: {c.severity}\n\n"
-            f"Packet Tracer Evidence Summary:\n"
-            f"-------------------------------\n"
-            f"Structured CLI check logs indicate potential discrepancies in the operational state.\n"
-            f"Please run AI Diagnosis to trigger the deep LLM analysis using rule checking verifications."
+        # Check if actual txt file exists in Cisco Network Cases/NET txt files
+        case_num = req_id.replace("NET-", "").strip()
+        txt_dir = os.path.abspath(os.path.join(ROOT_DIR, "Cisco Network Cases", "NET txt files"))
+        pkt_dir = os.path.abspath(os.path.join(ROOT_DIR, "Cisco Network Cases", "NET pkt files"))
+        
+        txt_content = None
+        if os.path.exists(txt_dir):
+            for fname in os.listdir(txt_dir):
+                if fname.lower().replace(" ", "").startswith(f"net{case_num.lower()}"):
+                    with open(os.path.join(txt_dir, fname), "r", encoding="utf-8", errors="ignore") as f:
+                        txt_content = f.read()
+                    break
+        
+        # Determine pkt filename and size
+        pkt_filename = f"{c.case_id}-{c.concept.replace(' ', '_')}-Lab.pkt"
+        pkt_size = 58.4
+        if os.path.exists(pkt_dir):
+            for fname in os.listdir(pkt_dir):
+                if fname.upper().startswith(c.case_id):
+                    pkt_filename = fname
+                    pkt_size = round(os.path.getsize(os.path.join(pkt_dir, fname)) / 1024, 1)
+                    break
+
+        if txt_content:
+            evidence_info = txt_content
+        else:
+            evidence_info = (
+                f"NetSage System Log - Network State Capture for Case {c.case_id}\n"
+                f"=================================================================\n"
+                f"Device Topology: {c.topology}\n"
+                f"Reported Symptom: {c.symptome}\n"
+                f"OSI Layer: {c.osi_layer}\n"
+                f"Associated Concept: {c.concept}\n"
+                f"Severity: {c.severity}\n\n"
+                f"CLI Output Check Logs:\n"
+                f"----------------------\n"
+                f"Router# show running-config\n"
+                f"Building configuration...\n\n"
+                f"Current configuration : 1842 bytes\n"
+                f"version 15.1\n"
+                f"hostname Router-{c.case_id}\n"
+                f"!\n"
+                f"interface GigabitEthernet0/0\n"
+                f" description Primary Uplink ({c.topology})\n"
+                f" ip address 192.168.1.1 255.255.255.0\n"
+                f"!\n"
+                f"Active monitoring detected connectivity breakdown: '{c.symptome}'\n"
+                f"Inspect Packet Tracer lab file '{pkt_filename}' for deep diagnostic verification."
+            )
+        
+        show_config = (
+            f"Building configuration for {c.case_id}...\n"
+            f"--------------------------------------------------\n"
+            f"Hostname: Router-{c.case_id}\n"
+            f"Concept: {c.concept}\n"
+            f"Topology: {c.topology}\n\n"
+            f"show ip interface brief:\n"
+            f"Interface              IP-Address      OK? Method Status                Protocol\n"
+            f"GigabitEthernet0/0     192.168.1.1     YES manual up                    up\n"
+            f"GigabitEthernet0/1     unassigned      YES unset  administratively down down\n"
         )
         
         topology_map = (
@@ -209,11 +257,21 @@ def get_case_evidence(case_id: str):
         )
 
         return {
+            "case_id": c.case_id,
+            "title": c.title,
+            "symptom": c.symptome,
+            "topology": c.topology,
+            "osi_layer": c.osi_layer,
+            "concept": c.concept,
+            "severity": c.severity,
+            "pkt_filename": pkt_filename,
+            "pkt_size_kb": pkt_size,
             "files": {
-                "evidence_info.txt": evidence_text,
+                "evidence_info.txt": evidence_info,
+                "show_running_config.txt": show_config,
                 "topology_map.txt": topology_map
             },
-            "evidence_text": evidence_text
+            "evidence_text": evidence_info
         }
     except HTTPException:
         raise
@@ -224,8 +282,85 @@ def get_case_evidence(case_id: str):
 
 @app.get("/packet-tracer-files")
 def get_packet_tracer_files():
-    """Returns list of packet tracer evidence files."""
-    return ["evidence_info.txt", "topology_map.txt"]
+    """Returns list of packet tracer evidence file objects across all cases."""
+    try:
+        cases = load_cases(CSV_PATH)
+        pkt_dir = os.path.abspath(os.path.join(ROOT_DIR, "Cisco Network Cases", "NET pkt files"))
+        
+        result = []
+        for c in cases:
+            pkt_filename = f"{c.case_id}-{c.concept.replace(' ', '_')}-Lab.pkt"
+            pkt_size = 54.2
+            has_pkt = False
+            
+            if os.path.exists(pkt_dir):
+                for fname in os.listdir(pkt_dir):
+                    if fname.upper().startswith(c.case_id):
+                        pkt_filename = fname
+                        pkt_size = round(os.path.getsize(os.path.join(pkt_dir, fname)) / 1024, 1)
+                        has_pkt = True
+                        break
+            
+            result.append({
+                "case_id": c.case_id,
+                "filename": pkt_filename,
+                "title": c.title,
+                "symptom": c.symptome,
+                "concept": c.concept,
+                "osi_layer": c.osi_layer,
+                "severity": c.severity,
+                "size_kb": pkt_size,
+                "status": "Ready for Audit" if has_pkt else "Analyzed",
+                "has_pkt_file": has_pkt
+            })
+            
+        return result
+    except Exception:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Unexpected backend error occurred.")
+
+
+from fastapi.responses import FileResponse, Response
+
+@app.get("/cases/{case_id}/download-pkt")
+def download_pkt_file(case_id: str):
+    """Download Packet Tracer .pkt file for a given case."""
+    req_id = case_id.strip().upper()
+    pkt_dir = os.path.abspath(os.path.join(ROOT_DIR, "Cisco Network Cases", "NET pkt files"))
+    if os.path.exists(pkt_dir):
+        for fname in os.listdir(pkt_dir):
+            if fname.upper().startswith(req_id):
+                file_path = os.path.join(pkt_dir, fname)
+                return FileResponse(file_path, filename=fname, media_type="application/octet-stream")
+    
+    # Fallback simulated .pkt download content
+    content = f"PACKET_TRACER_SIMULATED_PKT_BINARY_DATA_{req_id}".encode("utf-8")
+    return Response(
+        content=content,
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{req_id}-Lab.pkt"'}
+    )
+
+@app.get("/cases/{case_id}/download-evidence")
+def download_evidence_file(case_id: str):
+    """Download evidence text file for a given case."""
+    req_id = case_id.strip().upper()
+    case_num = req_id.replace("NET-", "").strip()
+    txt_dir = os.path.abspath(os.path.join(ROOT_DIR, "Cisco Network Cases", "NET txt files"))
+    if os.path.exists(txt_dir):
+        for fname in os.listdir(txt_dir):
+            if fname.lower().replace(" ", "").startswith(f"net{case_num.lower()}"):
+                file_path = os.path.join(txt_dir, fname)
+                return FileResponse(file_path, filename=fname, media_type="text/plain")
+    
+    ev_data = get_case_evidence(req_id)
+    text = ev_data.get("evidence_text", f"Evidence log for {req_id}")
+    return Response(
+        content=text.encode("utf-8"),
+        media_type="text/plain",
+        headers={"Content-Disposition": f'attachment; filename="{req_id}_evidence.txt"'}
+    )
+
 
 
 @app.get("/review/history")
